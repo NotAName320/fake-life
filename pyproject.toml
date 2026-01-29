@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools", "setuptools_scm[toml]"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fake_life"
+authors = [
+    {name = "Nota"},
+]
+description = "A bot for the Fake Life Discord server."
+readme = "README.md"
+requires-python = ">=3.13"
+keywords = ["discord"]
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "discord.py",
+    "pymongo",
+    "dotenv"
+]
+dynamic = ["version"]
+
+[tool.setuptools_scm]
