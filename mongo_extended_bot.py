@@ -10,20 +10,6 @@ from pymongo import AsyncMongoClient
 from pymongo.asynchronous.database import AsyncDatabase
 
 
-logger = logging.getLogger("Mongo")
-logger.setLevel(logging.WARN)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-file_handler = logging.FileHandler("bot.log")
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
-
-console_handler = logging.StreamHandler()
-console_handler.setFormatter(formatter)
-console_handler.setLevel(logging.WARN)
-logger.addHandler(console_handler)
-
-
 load_dotenv()
 MONGODB_DATABASE_NAME = getenv("MONGODB_DATABASE_NAME")
 
@@ -33,6 +19,10 @@ class FakeLifeDocument(ABC):
     @abstractmethod
     def retrieve(cls, db: AsyncDatabase) -> Self:
         pass
+
+
+class DbException(Exception):
+    pass
 
 
 class MongoExtendedBot(commands.Bot):
@@ -61,8 +51,4 @@ class MongoExtendedBot(commands.Bot):
 
     def get_document[T: FakeLifeDocument](self: Self, document_type: Type[T]) -> T:
         database = self.db_client.get_database(MONGODB_DATABASE_NAME)
-        try:
-            return document_type.retrieve(database)
-        except Exception as e:
-            logger.error("Encountered error whle performing database lookup", exc_info=True)
-            raise e
+        return document_type.retrieve(database)

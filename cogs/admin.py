@@ -1,4 +1,3 @@
-from sys import stderr
 import traceback
 from typing import Self
 
@@ -19,6 +18,7 @@ class Admin(commands.Cog):
     @commands.Cog.listener("on_ready")
     async def print_when_ready(self: Self):
         logger.info(f"Successfully logged in as {self.bot.user}")
+        # Redundant, but also the only info-level event we also want in terminal, so it's ok
         print(f"Successfully logged in as {self.bot.user}")
     
     @commands.Cog.listener()
@@ -38,10 +38,6 @@ class Admin(commands.Cog):
 
             # put error in log
             logger.error(formatted_error)
-
-            # put error in terminal
-            print(f'Exception in command {ctx.command}:', file=stderr)
-            traceback.print_exception(type(wrapped_error), wrapped_error, wrapped_error.__traceback__, file=stderr)
 
             # put error in chat
             errordesc = f'```py\n{formatted_error}\n```'
