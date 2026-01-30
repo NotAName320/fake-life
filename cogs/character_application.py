@@ -1,17 +1,20 @@
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Self
-from os import getenv
 
 import discord
 from discord import ui, ButtonStyle
 from discord.ext import commands
 from dotenv import load_dotenv
 
+from models import FakeLifeUser, FLObjectId, GeneticStats, pronouns
+from mongo_extended_bot import MongoExtendedBot
+from utils import getenv_or_exit
+
 
 load_dotenv()
-BOT_OPERATOR_ROLE_NAME = getenv("BOT_OPERATOR_ROLE_NAME") or ""
-CHARACTER_APPROVALS_CHANNEL = int(getenv("CHARACTER_APPROVALS_CHANNEL") or 0)
+BOT_OPERATOR_ROLE_NAME = getenv_or_exit("BOT_OPERATOR_ROLE_NAME")
+CHARACTER_APPROVALS_CHANNEL = int(getenv_or_exit("CHARACTER_APPROVALS_CHANNEL"))
 
 
 # select menus
@@ -23,15 +26,6 @@ PRONOUN_MENU = [
 
 
 @dataclass
-class GeneticStats:
-    physicality: int
-    diligence: int
-    wit: int
-    charisma: int
-    luck: int
-
-
-@dataclass
 class FullApplication:
     user: int
     first_name: str
@@ -39,18 +33,35 @@ class FullApplication:
     pronouns: str
     genetics: GeneticStats
 
-    def to_embed(self: Self) -> discord.Embed:
+    @property
+    def as_embed(self: Self) -> discord.Embed:
         retval = discord.Embed(colour=0x0, title="New Application", timestamp=datetime.now())
         retval.add_field(name="First Name", value=self.first_name)
         retval.add_field(name="Last Name", value=self.last_name)
         retval.add_field(name="Pronouns", value=self.pronouns, inline=False)
-        retval.add_field(name="Physicality", value=self.genetics.physicality)
-        retval.add_field(name="Diligence", value=self.genetics.diligence)
-        retval.add_field(name="Wit", value=self.genetics.wit)
-        retval.add_field(name="Charisma", value=self.genetics.charisma)
-        retval.add_field(name="Luck", value=self.genetics.luck)
+        retval.add_field(name="Physicality", value=self.genetics["physicality"])
+        retval.add_field(name="Diligence", value=self.genetics["diligence"])
+        retval.add_field(name="Wit", value=self.genetics["wit"])
+        retval.add_field(name="Charisma", value=self.genetics["charisma"])
+        retval.add_field(name="Luck", value=self.genetics["luck"])
 
         return retval
+    
+    @property
+    def as_user_document(self: Self) -> FakeLifeUser:
+        return FakeLifeUser(
+            _id=FLObjectId(str(self.user)),
+            first_name=self.first_name,
+            last_name=self.last_name,
+            pronouns=pronouns.from_string(self.pronouns),
+            genetics=self.genetics,
+
+            # defaults
+            age=14,
+            birthday=1, # TODO: change to current month
+            money=20.0,
+            gpa=3.0
+        )
 
 
 class ApplicationFormPageOne(ui.Modal, title="Character Application"):
@@ -197,7 +208,7 @@ class ConfirmationButton(ui.View):
 
         assert isinstance(approvals_channel, discord.TextChannel) and bot_operator_role is not None
         return await approvals_channel.send(f"{bot_operator_role.mention} New application submitted!",
-                                            embed=full_application.to_embed(),
+                                            embed=full_application.as_embed,
                                             view=ApprovalButtons(full_application))
     
     @ui.button(label="Re-enter Genetic Information", style=ButtonStyle.red)
@@ -209,6 +220,7 @@ class ConfirmationButton(ui.View):
 
 class ApprovalButtons(ui.View):
     application: FullApplication
+    exhausted: bool
 
     def __init__(self, application: FullApplication):
         self.application = application
@@ -216,11 +228,39 @@ class ApprovalButtons(ui.View):
 
     @ui.button(style=ButtonStyle.green, emoji="✅")
     async def approve(self, interaction: discord.Interaction, button: ui.Button):
-        return await interaction.response.send_message("Placeholder")
+        if self.exhausted:
+            return await interaction.response.send_message("Choice already made!", ephemeral=True)
+        self.exhausted = True
+
+        original_user = interaction.client.get_user(self.application.user)
+        if not original_user:
+            return await interaction.response.send_message("Applying user seems to have left.")
+        welcome_channel = discord.utils.get(interaction.guild.channels, name="welcome") # type: ignore
+        assert welcome_channel is not None
+        await original_user.send(f"Congrats, {self.application.first_name}! Your Fake Life application "
+                                 f"has been accepted! You start as a 14 year old in high school with a "
+                                 f"3.0 GPA and $20 (which will be granted monthly as an allowance). "
+                                 f"Please refer to the pinned document in {welcome_channel.mention} "
+                                 f"for info on how to play.")
+
+        assert isinstance(interaction.client, MongoExtendedBot)
+        await interaction.client.insert_document(self.application.as_user_document)
+
+        return await interaction.response.send_message("Appplication accepted and inserted into database!")
     
     @ui.button(style=ButtonStyle.red, emoji="❌")
-    async def redo_part_one(self, interaction: discord.Interaction, button: ui.Button):
-        return await interaction.response.send_message("Placeholder")
+    async def deny(self, interaction: discord.Interaction, button: ui.Button):
+        if self.exhausted:
+            return await interaction.response.send_message("Choice already made!", ephemeral=True)
+        self.exhausted = True
+
+        original_user = interaction.client.get_user(self.application.user)
+        if original_user:
+            await original_user.send("Unfortunately, your Fake Life application was rejected. "
+                                     "Please contact an admin for more info, and reapply "
+                                     "if you want to.")
+
+        return await interaction.response.send_message("Application rejected!")
 
 
 class CharacterApplication(commands.Cog):

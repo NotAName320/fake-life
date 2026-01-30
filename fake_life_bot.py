@@ -1,31 +1,26 @@
 import asyncio
 import os
-from os import getenv
-from sys import stderr
 
 from discord import Intents
 from dotenv import load_dotenv
 from pymongo import AsyncMongoClient
 
 from mongo_extended_bot import MongoExtendedBot
+from utils import getenv_or_exit
 
 
 load_dotenv()
-DISCORD_BOT_TOKEN = getenv("DISCORD_BOT_TOKEN")
-HOME_GUILD_ID = getenv("HOME_GUILD_ID")
-MONGODB_CONNECTION_STRING = getenv("MONGODB_CONNECTION_STRING")
+DISCORD_BOT_TOKEN = getenv_or_exit("DISCORD_BOT_TOKEN")
+HOME_GUILD_ID = getenv_or_exit("HOME_GUILD_ID")
+MONGODB_CONNECTION_STRING = getenv_or_exit("MONGODB_CONNECTION_STRING")
 
 
 async def main():
     # Remove old log file
-    os.remove("bot.log")
-
-    if not DISCORD_BOT_TOKEN:
-        print("No DISCORD_BOT_TOKEN defined in .env", file=stderr)
-        exit(1)
-    if not MONGODB_CONNECTION_STRING:
-        print("No MONGODB_CONNECTION_STRING defined in .env", file=stderr)
-        exit(1)
+    try:
+        os.remove("bot.log")
+    except FileNotFoundError:
+        pass
 
     intents = Intents.default()
     intents.message_content = True
@@ -37,7 +32,7 @@ async def main():
 
     @bot.event
     async def on_ready():
-        bot.home_guild = bot.get_guild(int(HOME_GUILD_ID or 0)) or exit(1)
+        bot.home_guild = bot.get_guild(int(HOME_GUILD_ID)) or exit(1)
 
     try:
         await bot.start(DISCORD_BOT_TOKEN)
