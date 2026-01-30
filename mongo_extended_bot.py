@@ -3,7 +3,7 @@ import logging
 from typing import Type, Self
 from os import getenv
 
-from discord import app_commands
+from discord import app_commands, Guild
 from discord.ext import commands
 from dotenv import load_dotenv
 from pymongo import AsyncMongoClient
@@ -27,6 +27,8 @@ class DbException(Exception):
 
 class MongoExtendedBot(commands.Bot):
     db_client: AsyncMongoClient
+
+    home_guild: Guild
 
     def __init__(self,
                  command_prefix,

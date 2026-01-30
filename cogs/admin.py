@@ -13,14 +13,13 @@ class Admin(commands.Cog):
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-        super().__init__()
 
     @commands.Cog.listener("on_ready")
     async def print_when_ready(self: Self):
         logger.info(f"Successfully logged in as {self.bot.user}")
         # Redundant, but also the only info-level event we also want in terminal, so it's ok
         print(f"Successfully logged in as {self.bot.user}")
-    
+
     @commands.Cog.listener()
     async def on_command_error(self: Self, ctx: Context, error: commands.CommandError):
         """Basic error handling, including generic messages to send for common errors"""

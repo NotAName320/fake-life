@@ -1,6 +1,6 @@
 import asyncio
 import os
-from os import listdir, getenv
+from os import getenv
 from sys import stderr
 
 from discord import Intents
@@ -12,10 +12,12 @@ from mongo_extended_bot import MongoExtendedBot
 
 load_dotenv()
 DISCORD_BOT_TOKEN = getenv("DISCORD_BOT_TOKEN")
+HOME_GUILD_ID = getenv("HOME_GUILD_ID")
 MONGODB_CONNECTION_STRING = getenv("MONGODB_CONNECTION_STRING")
 
 
 async def main():
+    # Remove old log file
     os.remove("bot.log")
 
     if not DISCORD_BOT_TOKEN:
@@ -31,10 +33,11 @@ async def main():
 
     bot = MongoExtendedBot(command_prefix='!', db_client=mongo_client, intents=intents)
 
-    for cog_file in listdir("cogs"):
-        if not cog_file.endswith(".py") or cog_file == "__init__.py":
-            continue
-        await bot.load_extension(f'cogs.{cog_file[:-3]}')
+    await bot.load_extension("cogs")
+
+    @bot.event
+    async def on_ready():
+        bot.home_guild = bot.get_guild(int(HOME_GUILD_ID or 0)) or exit(1)
 
     try:
         await bot.start(DISCORD_BOT_TOKEN)
