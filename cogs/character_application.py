@@ -63,7 +63,8 @@ class FullApplication:
             money=20.0,
             gpa=3.0,
             education=None,
-            job=None
+            job=None,
+            traits=[]
         )
 
 
