@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .document import FakeLifeDocument, InnerDocument
+from .document import FakeLifeDocument, InnerDocument, FLObjectId
 from .pronouns import Pronouns
 
 
@@ -27,3 +27,4 @@ class User(FakeLifeDocument):
     gpa: float
 
     education: Optional[str]
+    job: Optional[FLObjectId]

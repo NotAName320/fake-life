@@ -62,7 +62,8 @@ class FullApplication:
             birthday=current_month,
             money=20.0,
             gpa=3.0,
-            education=None
+            education=None,
+            job=None
         )
 
 
