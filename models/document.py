@@ -14,3 +14,6 @@ class FLObjectId(ObjectId):
 
 class FakeLifeDocument(TypedDict):
     _id: FLObjectId
+
+class InnerDocument(TypedDict):
+    pass

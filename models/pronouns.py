@@ -1,7 +1,7 @@
-from .document import FakeLifeDocument, FLObjectId
+from .document import InnerDocument, FLObjectId
 
 
-class Pronouns(FakeLifeDocument):
+class Pronouns(InnerDocument):
     they: str
     them: str
     their: str
@@ -10,7 +10,6 @@ class Pronouns(FakeLifeDocument):
 
 
 HE_HIM = Pronouns(
-    _id=FLObjectId(0),
     they="he",
     them="him",
     their="his",
@@ -20,7 +19,6 @@ HE_HIM = Pronouns(
 
 
 SHE_HER = Pronouns(
-    _id=FLObjectId(1),
     they="she",
     them="her",
     their="her",
@@ -30,7 +28,6 @@ SHE_HER = Pronouns(
 
 
 THEY_THEM = Pronouns(
-    _id=FLObjectId(2),
     they="they",
     them="them",
     their="their",

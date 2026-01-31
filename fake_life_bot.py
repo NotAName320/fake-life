@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 
 from discord import Intents
@@ -24,9 +25,13 @@ async def main():
 
     intents = Intents.default()
     intents.message_content = True
+    intents.members = True
     mongo_client = AsyncMongoClient(MONGODB_CONNECTION_STRING)
 
-    bot = MongoExtendedBot(command_prefix='!', db_client=mongo_client, intents=intents)
+    file_handler = logging.FileHandler("bot.log")
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+
+    bot = MongoExtendedBot(command_prefix='!', db_client=mongo_client, intents=intents, log_handler=file_handler, log_level=logging.INFO)
 
     await bot.load_extension("cogs")
 

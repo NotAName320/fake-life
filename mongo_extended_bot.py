@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
 
-from models import FakeLifeDocument
+from models import FakeLifeDocument, FakeLifeDate
 from utils import getenv_or_exit
 
 
@@ -44,7 +44,20 @@ class MongoExtendedBot(commands.Bot):
         collection: AsyncCollection[T] = database[document_type.__name__]
         return await collection.find_one(query)
     
-    async def insert_document(self: Self, document_to_insert: FakeLifeDocument):
+    async def insert_document[T: FakeLifeDocument](self: Self, document_type: Type[T], document_to_insert: T):
         database = self.db_client[MONGODB_DATABASE_NAME]
-        collection: AsyncCollection[FakeLifeDocument] = database[type(document_to_insert).__name__]
+        collection: AsyncCollection[FakeLifeDocument] = database[document_type.__name__]
         await collection.insert_one(document_to_insert)
+    
+    async def get_current_date(self: Self) -> FakeLifeDate:
+        database = self.db_client[MONGODB_DATABASE_NAME]
+        collection = database["Metadata"]
+
+        metadata_document = await collection.find_one()
+        assert metadata_document is not None
+
+        months_since_2010 = metadata_document["date"]
+        return FakeLifeDate(
+            year=months_since_2010 // 12 + 2010,
+            month=months_since_2010 % 12 + 1
+        )

@@ -23,7 +23,7 @@ class Admin(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self: Self, ctx: Context, error: commands.CommandError):
         """Basic error handling, including generic messages to send for common errors"""
-        wrapped_error: Exception = getattr(error, 'original', error)
+        unwrapped_error: Exception = getattr(error, 'original', error)
 
         if isinstance(error, commands.CommandNotFound):
             return await ctx.reply(f"Your command was not recognized. Please refer to {self.bot.command_prefix}help for more info.")
@@ -33,7 +33,7 @@ class Admin(commands.Cog):
             return await ctx.reply("Error: You do not have permission to use this command.")
 
         else:
-            formatted_error = "".join(traceback.format_exception(type(wrapped_error), wrapped_error, tb=wrapped_error.__traceback__))
+            formatted_error = "".join(traceback.format_exception(type(unwrapped_error), unwrapped_error, tb=unwrapped_error.__traceback__))
 
             # put error in log
             logger.error(formatted_error)

@@ -1,19 +1,20 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Self
+from typing import Self, Optional
 
 import discord
 from discord import ui, ButtonStyle
 from discord.ext import commands
 from dotenv import load_dotenv
 
-from models import FakeLifeUser, FLObjectId, GeneticStats, pronouns
-from mongo_extended_bot import MongoExtendedBot
+import models
+from models import FLObjectId, GeneticStats, pronouns, FakeLifeView
 from utils import getenv_or_exit
 
 
 load_dotenv()
 BOT_OPERATOR_ROLE_NAME = getenv_or_exit("BOT_OPERATOR_ROLE_NAME")
+MEMBER_ROLE_NAME = getenv_or_exit("MEMBER_ROLE_NAME")
 CHARACTER_APPROVALS_CHANNEL = int(getenv_or_exit("CHARACTER_APPROVALS_CHANNEL"))
 
 
@@ -27,18 +28,19 @@ PRONOUN_MENU = [
 
 @dataclass
 class FullApplication:
-    user: int
+    user: discord.User
     first_name: str
     last_name: str
     pronouns: str
-    genetics: GeneticStats
+    genetics: Optional[GeneticStats] = None
 
     @property
     def as_embed(self: Self) -> discord.Embed:
         retval = discord.Embed(colour=0x0, title="New Application", timestamp=datetime.now())
+        retval.add_field(name="Applicant", value=self.user.mention)
         retval.add_field(name="First Name", value=self.first_name)
         retval.add_field(name="Last Name", value=self.last_name)
-        retval.add_field(name="Pronouns", value=self.pronouns, inline=False)
+        retval.add_field(name="Pronouns", value=self.pronouns)
         retval.add_field(name="Physicality", value=self.genetics["physicality"])
         retval.add_field(name="Diligence", value=self.genetics["diligence"])
         retval.add_field(name="Wit", value=self.genetics["wit"])
@@ -47,10 +49,9 @@ class FullApplication:
 
         return retval
     
-    @property
-    def as_user_document(self: Self) -> FakeLifeUser:
-        return FakeLifeUser(
-            _id=FLObjectId(str(self.user)),
+    def as_user_document(self: Self, current_month: int) -> models.User:
+        return models.User(
+            _id=FLObjectId(str(self.user.id)),
             first_name=self.first_name,
             last_name=self.last_name,
             pronouns=pronouns.from_string(self.pronouns),
@@ -58,9 +59,10 @@ class FullApplication:
 
             # defaults
             age=14,
-            birthday=1, # TODO: change to current month
+            birthday=current_month,
             money=20.0,
-            gpa=3.0
+            gpa=3.0,
+            education=None
         )
 
 
@@ -86,7 +88,12 @@ class ApplicationFormPageOne(ui.Modal, title="Character Application"):
             f"To **proceed**, please press the green button below.\n"
             f"To **start over**, please press the red button.",  
             ephemeral=True,
-            view=GeneticAttributesButton(self)
+            view=GeneticAttributesButton(FullApplication(
+                user=interaction.user,
+                first_name=self.first_name.component.value,
+                last_name=self.last_name.component.value,
+                pronouns=pronouns
+            ))
         )
 
 class ApplicationFormPageTwo(ui.Modal, title="Genetic Attributes"):
@@ -105,7 +112,7 @@ class ApplicationFormPageTwo(ui.Modal, title="Genetic Attributes"):
     async def on_submit(self, interaction: discord.Interaction):
         try:
             physicality, diligence, wit, charisma, luck = (
-                int(x.component.value) for x in (self.physicality, self.diligence, self.wit, self.charisma, self.luck) # type: ignore
+                int(x.component.value) for x in (self.physicality, self.diligence, self.wit, self.charisma, self.luck)
             ) 
         except ValueError:
             await interaction.response.send_message("One or more fields was not a valid number. Please try again.", ephemeral=True)
@@ -120,28 +127,29 @@ class ApplicationFormPageTwo(ui.Modal, title="Genetic Attributes"):
             return
         sum_is_under_warning = f'**WARNING:** Sum of genetic stats is under 27! You have {27 - sum_of_stats} points unused.\n' if sum_of_stats < 27 else ""
 
-
         self.parent.exhausted = True
+        self.parent.in_progress_application.genetics = GeneticStats(
+            physicality=physicality,
+            diligence=diligence,
+            wit=wit,
+            charisma=charisma,
+            luck=luck
+        )
         await interaction.response.send_message(f"Genetic information submitted! To review:\n\n"
             f"Physicality: {physicality}\n"
-            f"Dilgence: {diligence}\n"
+            f"Diligence: {diligence}\n"
             f"Wit: {wit}\n"
             f"Charisma: {charisma}\n"
             f"Luck: {luck}\n"
             f"{sum_is_under_warning}\n"
             f"To **confirm and submit for approval**, please press the green button below.\n"
-            f"To **re-enter**, please press the red button.", ephemeral=True, view=ConfirmationButton(self.parent.page_one, self))
+            f"To **re-enter**, please press the red button.", ephemeral=True, view=ConfirmationButton(self.parent.in_progress_application))
 
 
-class StartApplicationButton(ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
+class StartApplicationButton(FakeLifeView):
     @ui.button(label="Start Application", style=ButtonStyle.green, custom_id="fake_life_bot:StartApplicationButton:start_application")
     async def start_application(self, interaction: discord.Interaction, button: ui.Button):
-        assert interaction.guild is not None
         member_role = discord.utils.get(interaction.guild.roles, name="Member")
-        assert member_role is not None and isinstance(interaction.user, discord.Member)
 
         if member_role in interaction.user.roles:
             return await interaction.response.send_message("You already have a character! "
@@ -151,12 +159,12 @@ class StartApplicationButton(ui.View):
         return await interaction.response.send_modal(ApplicationFormPageOne())
 
 
-class GeneticAttributesButton(ui.View):
-    page_one: ApplicationFormPageOne
+class GeneticAttributesButton(FakeLifeView):
+    in_progress_application: FullApplication
     exhausted: bool = False
-    def __init__(self, page_one: ApplicationFormPageOne):
-        self.page_one = page_one
-        super().__init__(timeout=None)
+    def __init__(self, in_progress_application: FullApplication):
+        self.in_progress_application = in_progress_application
+        super().__init__()
 
     @ui.button(label="Pick Genetic Attributes", style=ButtonStyle.green)
     async def start_application(self, interaction: discord.Interaction, button: ui.Button):
@@ -172,14 +180,12 @@ class GeneticAttributesButton(ui.View):
         return await interaction.response.send_modal(ApplicationFormPageOne())
 
 
-class ConfirmationButton(ui.View):
-    page_one: ApplicationFormPageOne
-    page_two: ApplicationFormPageTwo
+class ConfirmationButton(FakeLifeView):
+    in_progress_application: FullApplication
     exhausted: bool = False
-    def __init__(self, page_one: ApplicationFormPageOne, page_two: ApplicationFormPageTwo):
-        self.page_one = page_one
-        self.page_two = page_two
-        super().__init__(timeout=None)
+    def __init__(self, in_progress_application: FullApplication):
+        self.in_progress_application = in_progress_application
+        super().__init__()
 
     @ui.button(label="Confirm and Submit", style=ButtonStyle.green)
     async def confirm_and_submit(self, interaction: discord.Interaction, button: ui.Button):
@@ -188,28 +194,12 @@ class ConfirmationButton(ui.View):
         self.exhausted = True
         await interaction.response.send_message("Submitted! Please wait for admin approval.", ephemeral=True)
 
-        full_application = FullApplication(
-            user=interaction.user.id,
-            first_name=self.page_one.first_name.component.value, # type: ignore
-            last_name=self.page_one.last_name.component.value, # type: ignore
-            pronouns=self.page_one.pronouns.component.value, # type: ignore
-            genetics=GeneticStats(
-                self.page_two.physicality.component.value, # type: ignore
-                self.page_two.diligence.component.value, # type: ignore
-                self.page_two.wit.component.value, # type: ignore
-                self.page_two.charisma.component.value, # type: ignore
-                self.page_two.luck.component.value # type: ignore
-            )
-        )
-        
-        assert interaction.guild is not None
         approvals_channel = interaction.guild.get_channel(CHARACTER_APPROVALS_CHANNEL)
         bot_operator_role = discord.utils.get(interaction.guild.roles, name=BOT_OPERATOR_ROLE_NAME)
 
-        assert isinstance(approvals_channel, discord.TextChannel) and bot_operator_role is not None
         return await approvals_channel.send(f"{bot_operator_role.mention} New application submitted!",
-                                            embed=full_application.as_embed,
-                                            view=ApprovalButtons(full_application))
+                                            embed=self.in_progress_application.as_embed,
+                                            view=ApprovalButtons(self.in_progress_application))
     
     @ui.button(label="Re-enter Genetic Information", style=ButtonStyle.red)
     async def redo_part_one(self, interaction: discord.Interaction, button: ui.Button):
@@ -218,13 +208,13 @@ class ConfirmationButton(ui.View):
         return await interaction.response.send_modal(ApplicationFormPageTwo(self))
 
 
-class ApprovalButtons(ui.View):
+class ApprovalButtons(FakeLifeView):
     application: FullApplication
-    exhausted: bool
+    exhausted: bool = False
 
     def __init__(self, application: FullApplication):
         self.application = application
-        super().__init__(timeout=None)
+        super().__init__()
 
     @ui.button(style=ButtonStyle.green, emoji="✅")
     async def approve(self, interaction: discord.Interaction, button: ui.Button):
@@ -232,29 +222,30 @@ class ApprovalButtons(ui.View):
             return await interaction.response.send_message("Choice already made!", ephemeral=True)
         self.exhausted = True
 
-        original_user = interaction.client.get_user(self.application.user)
+        original_user = interaction.guild.get_member(self.application.user.id)
         if not original_user:
             return await interaction.response.send_message("Applying user seems to have left.")
-        welcome_channel = discord.utils.get(interaction.guild.channels, name="welcome") # type: ignore
-        assert welcome_channel is not None
+        welcome_channel = discord.utils.get(interaction.guild.channels, name="welcome")
         await original_user.send(f"Congrats, {self.application.first_name}! Your Fake Life application "
                                  f"has been accepted! You start as a 14 year old in high school with a "
                                  f"3.0 GPA and $20 (which will be granted monthly as an allowance). "
                                  f"Please refer to the pinned document in {welcome_channel.mention} "
                                  f"for info on how to play.")
+        
+        member_role = discord.utils.get(interaction.guild.roles, name=MEMBER_ROLE_NAME)
+        await original_user.add_roles(member_role)
 
-        assert isinstance(interaction.client, MongoExtendedBot)
-        await interaction.client.insert_document(self.application.as_user_document)
+        await interaction.client.insert_document(models.User, self.application.as_user_document((await interaction.client.get_current_date())["month"]))
 
         return await interaction.response.send_message("Appplication accepted and inserted into database!")
     
-    @ui.button(style=ButtonStyle.red, emoji="❌")
+    @ui.button(style=ButtonStyle.blurple, emoji="❌")
     async def deny(self, interaction: discord.Interaction, button: ui.Button):
         if self.exhausted:
             return await interaction.response.send_message("Choice already made!", ephemeral=True)
         self.exhausted = True
 
-        original_user = interaction.client.get_user(self.application.user)
+        original_user = interaction.guild.get_member(self.application.user.id)
         if original_user:
             await original_user.send("Unfortunately, your Fake Life application was rejected. "
                                      "Please contact an admin for more info, and reapply "

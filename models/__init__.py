@@ -1,6 +1,8 @@
 from typing import TypedDict
 
-from .document import FakeLifeDocument, FLObjectId
-from .user import FakeLifeUser, GeneticStats
-from .pronouns import Pronouns
 from . import pronouns
+from .document import FakeLifeDocument, FLObjectId
+from .fake_life_date import FakeLifeDate
+from .pronouns import Pronouns
+from .user import User, GeneticStats
+from .view_base import FakeLifeView

@@ -1,8 +1,10 @@
-from .document import FakeLifeDocument
+from typing import Optional
+
+from .document import FakeLifeDocument, InnerDocument
 from .pronouns import Pronouns
 
 
-class GeneticStats(FakeLifeDocument):
+class GeneticStats(InnerDocument):
     physicality: int
     diligence: int
     wit: int
@@ -10,7 +12,7 @@ class GeneticStats(FakeLifeDocument):
     luck: int
 
 
-class FakeLifeUser(FakeLifeDocument):
+class User(FakeLifeDocument):
     first_name: str
     last_name: str
 
@@ -23,3 +25,5 @@ class FakeLifeUser(FakeLifeDocument):
 
     money: float
     gpa: float
+
+    education: Optional[str]
