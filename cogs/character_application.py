@@ -64,7 +64,8 @@ class FullApplication:
             gpa=3.0,
             education=None,
             job=None,
-            traits=[]
+            traits=[],
+            relationship=None
         )
 
 
@@ -105,11 +106,11 @@ class ApplicationFormPageTwo(ui.Modal, title="Genetic Attributes"):
         self.parent = parent
         super().__init__(timeout=None)
     
-    physicality = ui.Label(text="Physicality", component=ui.TextInput(placeholder="0-10", min_length=1, max_length=2))
-    diligence = ui.Label(text="Diligence", component=ui.TextInput(placeholder="0-10", min_length=1, max_length=2))
-    wit = ui.Label(text="Wit", component=ui.TextInput(placeholder="0-10", min_length=1, max_length=2))
-    charisma = ui.Label(text="Charisma", component=ui.TextInput(placeholder="0-10", min_length=1, max_length=2))
-    luck = ui.Label(text="Luck", component=ui.TextInput(placeholder="0-10", min_length=1, max_length=2))
+    physicality = ui.Label(text="Physicality", component=ui.TextInput(placeholder="1-10", min_length=1, max_length=2))
+    diligence = ui.Label(text="Diligence", component=ui.TextInput(placeholder="1-10", min_length=1, max_length=2))
+    wit = ui.Label(text="Wit", component=ui.TextInput(placeholder="1-10", min_length=1, max_length=2))
+    charisma = ui.Label(text="Charisma", component=ui.TextInput(placeholder="1-10", min_length=1, max_length=2))
+    luck = ui.Label(text="Luck", component=ui.TextInput(placeholder="1-10", min_length=1, max_length=2))
 
     async def on_submit(self, interaction: discord.Interaction):
         try:
@@ -124,10 +125,10 @@ class ApplicationFormPageTwo(ui.Modal, title="Genetic Attributes"):
             await interaction.response.send_message("One or more fields was out of range. Please try again.", ephemeral=True)
             return
         sum_of_stats = sum((physicality, diligence, wit, charisma, luck))
-        if sum_of_stats > 27:
+        if sum_of_stats > 28:
             await interaction.response.send_message("One or more fields was out of range. Please try again.", ephemeral=True)
             return
-        sum_is_under_warning = f'**WARNING:** Sum of genetic stats is under 27! You have {27 - sum_of_stats} points unused.\n' if sum_of_stats < 27 else ""
+        sum_is_under_warning = f'**WARNING:** Sum of genetic stats is under 28! You have {28 - sum_of_stats} points unused.\n' if sum_of_stats < 28 else ""
 
         self.parent.exhausted = True
         self.parent.in_progress_application.genetics = GeneticStats(
@@ -237,7 +238,7 @@ class ApprovalButtons(FakeLifeView):
         member_role = discord.utils.get(interaction.guild.roles, name=MEMBER_ROLE_NAME)
         await original_user.add_roles(member_role)
 
-        await interaction.client.insert_document(models.User, self.application.as_user_document((await interaction.client.get_current_date())["month"]))
+        await interaction.client.insert_document(models.User, self.application.as_user_document((await interaction.client.get_current_date()).month))
 
         return await interaction.response.send_message("Appplication accepted and inserted into database!")
     

@@ -28,5 +28,7 @@ class User(FakeLifeDocument):
 
     education: Optional[str]
     job: Optional[FLObjectId]
+
+    relatonship: Optional[FLObjectId]
     
     traits: list[FLObjectId]
