@@ -3,17 +3,11 @@ from typing import Self, Optional
 import discord
 from discord.ext import commands
 from discord.ext.commands import Context
-from dotenv import load_dotenv
 
+from constants import BOT_OPERATOR_ROLE_NAME, MEMBER_ROLE_NAME
 import models
 from models import FLObjectId
 from mongo_extended_bot import MongoExtendedBot
-from utils import getenv_or_exit
-
-
-load_dotenv()
-BOT_OPERATOR_ROLE_NAME = getenv_or_exit("BOT_OPERATOR_ROLE_NAME")
-MEMBER_ROLE_NAME = getenv_or_exit("MEMBER_ROLE_NAME")
 
 
 class CharacterManagement(commands.Cog):

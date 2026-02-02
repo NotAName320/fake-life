@@ -1,3 +1,4 @@
+import logging
 import traceback
 from typing import Self
 
@@ -5,7 +6,8 @@ from discord import Embed
 from discord.ext import commands
 from discord.ext.commands import Context
 
-from . import logger
+
+logger = logging.getLogger("fake_life_bot")
 
 
 class Admin(commands.Cog):

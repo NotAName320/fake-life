@@ -2,17 +2,12 @@ from typing import Type, Self
 
 from discord import app_commands, Guild
 from discord.ext import commands
-from dotenv import load_dotenv
 from pymongo import AsyncMongoClient
 from pymongo.asynchronous.collection import AsyncCollection
 
+from constants import MONGODB_DATABASE_NAME
 import models
 from models import FakeLifeDocument, FakeLifeDate
-from utils import getenv_or_exit
-
-
-load_dotenv()
-MONGODB_DATABASE_NAME = getenv_or_exit("MONGODB_DATABASE_NAME")
 
 
 class MongoExtendedBot(commands.Bot):
@@ -39,25 +34,25 @@ class MongoExtendedBot(commands.Bot):
                          allowed_installs=allowed_installs,
                          intents=intents,
                          **options)
+    
+    @property
+    def database(self: Self):
+        return self.db_client[MONGODB_DATABASE_NAME]
 
     async def get_document[T: FakeLifeDocument](self: Self, document_type: Type[T], query: dict) -> T | None:
-        database = self.db_client[MONGODB_DATABASE_NAME]
-        collection: AsyncCollection[T] = database[document_type.__name__]
+        collection: AsyncCollection[T] = self.database[document_type.__name__]
         return await collection.find_one(query)
     
     async def insert_document[T: FakeLifeDocument](self: Self, document_type: Type[T], document_to_insert: T):
-        database = self.db_client[MONGODB_DATABASE_NAME]
-        collection: AsyncCollection[FakeLifeDocument] = database[document_type.__name__]
+        collection: AsyncCollection[FakeLifeDocument] = self.database[document_type.__name__]
         await collection.insert_one(document_to_insert)
     
     async def delete_document[T: FakeLifeDocument](self: Self, document_type: Type[T], query: dict):
-        database = self.db_client[MONGODB_DATABASE_NAME]
-        collection: AsyncCollection[FakeLifeDocument] = database[document_type.__name__]
+        collection: AsyncCollection[FakeLifeDocument] = self.database[document_type.__name__]
         await collection.delete_one(query)
     
     async def get_current_date(self: Self) -> FakeLifeDate:
-        database = self.db_client[MONGODB_DATABASE_NAME]
-        collection = database["Metadata"]
+        collection = self.database["Metadata"]
 
         metadata_document = await collection.find_one()
         assert metadata_document is not None

@@ -5,17 +5,10 @@ from typing import Self, Optional
 import discord
 from discord import ui, ButtonStyle
 from discord.ext import commands
-from dotenv import load_dotenv
 
+from constants import BOT_OPERATOR_ROLE_NAME, CHARACTER_APPROVALS_CHANNEL_ID, MEMBER_ROLE_NAME
 import models
 from models import FLObjectId, GeneticStats, pronouns, FakeLifeView
-from utils import getenv_or_exit
-
-
-load_dotenv()
-BOT_OPERATOR_ROLE_NAME = getenv_or_exit("BOT_OPERATOR_ROLE_NAME")
-MEMBER_ROLE_NAME = getenv_or_exit("MEMBER_ROLE_NAME")
-CHARACTER_APPROVALS_CHANNEL = int(getenv_or_exit("CHARACTER_APPROVALS_CHANNEL"))
 
 
 # select menus
@@ -197,7 +190,7 @@ class ConfirmationButton(FakeLifeView):
         self.exhausted = True
         await interaction.response.send_message("Submitted! Please wait for admin approval.", ephemeral=True)
 
-        approvals_channel = interaction.guild.get_channel(CHARACTER_APPROVALS_CHANNEL)
+        approvals_channel = interaction.guild.get_channel(CHARACTER_APPROVALS_CHANNEL_ID)
         bot_operator_role = discord.utils.get(interaction.guild.roles, name=BOT_OPERATOR_ROLE_NAME)
 
         return await approvals_channel.send(f"{bot_operator_role.mention} New application submitted!",
