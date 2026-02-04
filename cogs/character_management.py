@@ -21,7 +21,7 @@ class CharacterManagement(commands.Cog):
         if not user:
             user = ctx.author
         
-        user_info = await self.bot.get_document(models.User, {'_id': FLObjectId(user.id)})
+        user_info = await self.bot.get_document_by_id(models.User, FLObjectId(user.id))
         if user_info is None:
             return await ctx.reply("User not found.")
         
@@ -32,7 +32,7 @@ class CharacterManagement(commands.Cog):
     @commands.command(name="deluser")
     @commands.has_role(BOT_OPERATOR_ROLE_NAME)
     async def delete_user(self: Self, ctx: Context, user: discord.Member):
-        user_info = await self.bot.get_document(models.User, {'_id': FLObjectId(user.id)})
+        user_info = await self.bot.get_document_by_id(models.User, FLObjectId(user.id))
         if user_info is None:
             return await ctx.reply("User not found.")
 
