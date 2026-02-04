@@ -25,24 +25,7 @@ class CharacterManagement(commands.Cog):
         if user_info is None:
             return await ctx.reply("User not found.")
         
-        embed = discord.Embed(colour=0x0, title="Character Info")\
-                       .add_field(name="Name", value=f"{user_info["first_name"]} {user_info["last_name"]}")\
-                       .add_field(name="Age", value=user_info['age'])\
-                       .add_field(name="Pronouns", value=f"{user_info['pronouns']["they"]}/{user_info['pronouns']["them"]}")\
-                       .add_field(name="Birthday", value=f'{await self.bot.calculate_birthday(user_info)}')\
-                       .add_field(name="Net Worth", value=f'${user_info['money']:.2f}')\
-                       .add_field(name="Relationship Status", value=f"With {user_info['relationship']}"
-                                  if user_info['relationship'] else "Single")\
-                       .add_field(name="Education", value=f'{user_info["education"]}')\
-                       .add_field(name="Job", value=f"{user_info['job']}")\
-                       .add_field(name="Traits", value=user_info["traits"] if user_info["traits"] else "None")\
-                       .add_field(name="Genetic Attributes",
-                                  value=f'```Physicality: {user_info["genetics"]["physicality"]}\n'
-                                        f'Diligence: {user_info["genetics"]["diligence"]}\n'
-                                        f'Wit: {user_info["genetics"]["wit"]}\n'
-                                        f'Charisma: {user_info["genetics"]["charisma"]}\n'
-                                        f'Luck: {user_info["genetics"]["luck"]}```',
-                                  inline=False)
+        embed = user_info.as_discord_embed()
 
         await ctx.reply(embed=embed)
 
@@ -58,7 +41,7 @@ class CharacterManagement(commands.Cog):
         member_role = discord.utils.get(ctx.guild.roles, name=MEMBER_ROLE_NAME)
         await user.remove_roles(member_role)
 
-        return await ctx.reply(f"{user_info['first_name']} {user_info['last_name']} successfully deleted!")
+        return await ctx.reply(f"{user_info.first_name} {user_info.last_name} successfully deleted!")
 
 
 async def setup(bot: MongoExtendedBot):

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import TypedDict
 
 from bson import ObjectId
@@ -11,9 +12,13 @@ class FLObjectId(ObjectId):
             oid = "0" * (24 - len(oid)) + oid
         super().__init__(oid)
 
-
-class FakeLifeDocument(TypedDict):
+@dataclass
+class FakeLifeDocument:
     _id: FLObjectId
+
+    @classmethod
+    def from_mongo_document(cls, document: dict):
+        return cls(**document)
 
 class InnerDocument(TypedDict):
     pass

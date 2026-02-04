@@ -8,7 +8,7 @@ from discord.ext import commands
 
 from constants import BOT_OPERATOR_ROLE_NAME, CHARACTER_APPROVALS_CHANNEL_ID, MEMBER_ROLE_NAME
 import models
-from models import FLObjectId, GeneticStats, pronouns, FakeLifeView
+from models import FLObjectId, GeneticStats, pronouns, FakeLifeView, FakeLifeDate
 
 
 # select menus
@@ -42,7 +42,7 @@ class FullApplication:
 
         return retval
     
-    def as_user_document(self: Self, current_month: int) -> models.User:
+    def as_user_document(self: Self, current_date: FakeLifeDate) -> models.User:
         return models.User(
             _id=FLObjectId(str(self.user.id)),
             first_name=self.first_name,
@@ -51,8 +51,9 @@ class FullApplication:
             genetics=self.genetics,
 
             # defaults
-            age=14,
-            birthday=current_month,
+            age=18,
+            birth_month=current_date.month,
+            birth_year=current_date.year - 18,
             money=20.0,
             gpa=3.0,
             education=None,
@@ -231,7 +232,7 @@ class ApprovalButtons(FakeLifeView):
         member_role = discord.utils.get(interaction.guild.roles, name=MEMBER_ROLE_NAME)
         await original_user.add_roles(member_role)
 
-        await interaction.client.insert_document(models.User, self.application.as_user_document((await interaction.client.get_current_date()).month))
+        await interaction.client.insert_document(self.application.as_user_document(await interaction.client.get_current_date()))
 
         return await interaction.response.send_message("Appplication accepted and inserted into database!")
     
