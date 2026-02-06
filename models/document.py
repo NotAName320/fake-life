@@ -1,7 +1,9 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import TypedDict
+from typing import Self, TypedDict
 
 from bson import ObjectId
+from discord import Embed
 
 
 class FLObjectId(ObjectId):
@@ -13,12 +15,19 @@ class FLObjectId(ObjectId):
         super().__init__(oid)
 
 @dataclass
-class FakeLifeDocument:
+class FakeLifeDocument(ABC):
     _id: FLObjectId
 
     @classmethod
     def from_mongo_document(cls, document: dict):
         return cls(**document)
+    
+    @property
+    @abstractmethod
+    def as_embed(self: Self) -> Embed:
+        return Embed(colour=0x0,
+                     title="No Embed",
+                     description="This object has no designated embed!")
 
 class InnerDocument(TypedDict):
     pass

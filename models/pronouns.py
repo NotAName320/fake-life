@@ -1,4 +1,4 @@
-from .document import InnerDocument, FLObjectId
+from .document import InnerDocument
 
 
 class Pronouns(InnerDocument):

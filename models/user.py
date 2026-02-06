@@ -3,7 +3,7 @@ from typing import Optional, Self
 
 import discord
 
-from . import FakeLifeDate
+from .fake_life_date import FakeLifeDate
 from .document import FakeLifeDocument, InnerDocument, FLObjectId
 from .pronouns import Pronouns
 
