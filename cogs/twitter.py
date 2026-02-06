@@ -95,7 +95,7 @@ class Twitter(commands.Cog):
         await self.bot.insert_document(TwitterAccount(
             _id=FLObjectId(ctx.author.id),
             handle=handle,
-            display_name=f"{author_fl_user.first_name} {author_fl_user.last_name}"
+            display_name=author_fl_user.full_name
         ))
 
         return await ctx.reply(f"Your Twitter account was successfully registered. "

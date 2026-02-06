@@ -40,6 +40,10 @@ class User(FakeLifeDocument):
     traits: list[FLObjectId]
 
     @property
+    def full_name(self: Self) -> str:
+        return f"{self.first_name} {self.last_name}"
+
+    @property
     def birthday(self: Self) -> FakeLifeDate:
         return FakeLifeDate(
             year=self.birth_year,
@@ -49,7 +53,7 @@ class User(FakeLifeDocument):
     @property
     def as_embed(self: Self) -> discord.Embed:
         return discord.Embed(colour=0x0, title="Character Info")\
-                      .add_field(name="Name", value=f"{self.first_name} {self.last_name}")\
+                      .add_field(name="Name", value=self.full_name)\
                       .add_field(name="Age", value=self.age)\
                       .add_field(name="Pronouns", value=f"{self.pronouns['they']}/{self.pronouns['them']}")\
                       .add_field(name="Birthday", value=str(self.birthday))\
