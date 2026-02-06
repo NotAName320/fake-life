@@ -57,10 +57,7 @@ class Twitter(commands.Cog):
         
         async with aiohttp.ClientSession() as session:
             webhook = discord.Webhook.from_url(TWITTER_WEBHOOK_URL, session=session)
-            if attached_file:
-                await webhook.send(file=attached_file, embed=embed)
-            else:
-                await webhook.send(embed=embed)
+            await webhook.send(file=attached_file, embed=embed)
 
         # delay to avoid weird client-side ghost messages
         await message.delete(delay=1.0)
