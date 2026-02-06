@@ -40,7 +40,9 @@ class PageTwo(ui.Modal, title="Genetic Attributes"):
         if sum_of_stats > 28:
             await interaction.response.send_message("One or more fields was out of range. Please try again.", ephemeral=True)
             return
-        sum_is_under_warning = f'**WARNING:** Sum of genetic stats is under 28! You have {28 - sum_of_stats} points unused.\n' if sum_of_stats < 28 else ""
+        sum_is_under_warning = f'**WARNING:** Sum of genetic stats is under 28!'\
+                               f'You have {28 - sum_of_stats} points unused.\n'\
+                               if sum_of_stats < 28 else ""
 
         self.parent.exhausted = True
         self.parent.in_progress_application.genetics = GeneticStats(

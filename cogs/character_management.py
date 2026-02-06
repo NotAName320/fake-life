@@ -24,10 +24,8 @@ class CharacterManagement(commands.Cog):
         user_info = await self.bot.get_document_by_id(models.User, FLObjectId(user.id))
         if user_info is None:
             return await ctx.reply("User not found.")
-        
-        embed = user_info.as_discord_embed()
 
-        await ctx.reply(embed=embed)
+        await ctx.reply(embed=user_info.as_embed)
 
     @commands.command(name="deluser")
     @commands.has_role(BOT_OPERATOR_ROLE_NAME)

@@ -46,7 +46,8 @@ class User(FakeLifeDocument):
             month=self.birth_month
         )
 
-    def as_discord_embed(self: Self) -> discord.Embed:
+    @property
+    def as_embed(self: Self) -> discord.Embed:
         return discord.Embed(colour=0x0, title="Character Info")\
                       .add_field(name="Name", value=f"{self.first_name} {self.last_name}")\
                       .add_field(name="Age", value=self.age)\
