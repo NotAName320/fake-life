@@ -25,27 +25,28 @@ class Admin(commands.Cog):
     @commands.Cog.listener()
     async def on_command_error(self: Self, ctx: Context, error: commands.CommandError):
         """Basic error handling, including generic messages to send for common errors"""
-        unwrapped_error: Exception = getattr(error, 'original', error)
-
         if isinstance(error, commands.CommandNotFound):
-            return await ctx.reply(f"Your command was not recognized. Please refer to {self.bot.command_prefix}help for more info.")
+            return await ctx.reply(f"Your command was not recognized. Please refer to `{self.bot.command_prefix}help` for more info.")
         if isinstance(error, commands.MissingRequiredArgument):
             return await ctx.reply("Error: you did not provide the required argument(s). Make sure you typed the command correctly.")
-        if isinstance(error, commands.CheckFailure):
+        if isinstance(error, commands.MissingPermissions):
             return await ctx.reply("Error: You do not have permission to use this command.")
+        if isinstance(error, commands.CheckFailure):
+            # most check failures can be handled within the check itself
+            return
+        
+        unwrapped_error: Exception = getattr(error, 'original', error)
+        formatted_error = "".join(traceback.format_exception(type(unwrapped_error), unwrapped_error, tb=unwrapped_error.__traceback__))
 
-        else:
-            formatted_error = "".join(traceback.format_exception(type(unwrapped_error), unwrapped_error, tb=unwrapped_error.__traceback__))
+        # put error in log
+        logger.error(formatted_error)
 
-            # put error in log
-            logger.error(formatted_error)
-
-            # put error in chat
-            errordesc = f'```py\n{formatted_error}\n```'
-            embed = Embed(title='Error', description=errordesc, color=0)
-            app_info = await self.bot.application_info()
-            embed.set_footer(text=f'Please contact {app_info.owner} for help.')
-            await ctx.send(embed=embed)
+        # put error in chat
+        errordesc = f'```py\n{formatted_error}\n```'
+        embed = Embed(title='Error', description=errordesc, color=0)
+        app_info = await self.bot.application_info()
+        embed.set_footer(text=f'Please contact {app_info.owner} for help.')
+        await ctx.send(embed=embed)
 
     @commands.command()
     async def ping(self: Self, ctx: Context):
